@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>La sécurisation des trajets vers les écoles de la ville de Taroudant</title>
+    <meta charset="utf-8" />
+	
+	<!-- Bibliothèque de base: Leaflet-->
+    <link rel="stylesheet" href="libs/leaflet.css"/>
+	<script src="libs/leaflet.js"></script>
+	<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+	<!-- leaflet geoserver request link  -->
+     <script src="./libs/L.Geoserver.js"></script>
+
+    <!-- betterWMS  -->
+     <script src="./libs/L.TileLayer.BetterWMS.js"></script>
+
+	<!-- Draw-->
+	<script src= "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw-src.js"></script>
+	<link rel="stylesheet" href= "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.css">
+	<script src= "https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/0.2.3/leaflet.draw.js"></script>
+	
+	<!-- Slide menu-->
+	<link rel="stylesheet" href="libs/slide_menu/SlideMenu.css" />
+	<script src="libs/slide_menu/SlideMenu.js"></script>
+	<link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+	
+	<!-- GeoCoder-->
+	<link rel="stylesheet" href="libs/Control.OSMGeocoder.css"/>
+	<script src="libs/Control.OSMGeocoder.js"></script>
+	
+	<!-- Overview-->
+	<link rel="stylesheet" href="libs/overview/MiniMap.css" />
+	<script src="libs/overview/MiniMap.js"></script>
+ 
+	<!-- Localisation-->
+	<link rel="stylesheet" href="libs/L.Control.Locate.min.css" />
+    <script src="libs/L.Control.Locate.js"></script>
+	
+	<!-- Mouse position-->
+	<link rel="stylesheet" href="libs/L.Control.MousePosition.css" />
+    <script src="libs/L.Control.MousePosition.js"></script>
+	
+	<!-- Navigation Bar-->
+    <link rel="stylesheet" href="libs/NavBar/NavBar.css"/>
+	<script src="libs/NavBar/NavBar.js"></script>
+	
+	<!-- Font-->
+	<link href="//maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css" rel="stylesheet">
+	
+	<!-- jquery-->
+	<script src="https://code.jquery.com/jquery-2.1.1.min.js"></script>
+	<script src="libs/leaflet.browser.print.js"></script>
+<script src="libs/leaflet.browser.print.utils.js"></script>
+<script src="libs/leaflet.browser.print.sizes.js"></script>
+<link rel="stylesheet" href="libs/leaflet-ruler.css" />
+<script src="libs/leaflet-ruler.js"></script>
+
+	
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+        html, body, #map {
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <div id="map"></div>
+    <script>
+	
+		///// Fond de base
+		var OpenStreetMap = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+		var googlesatellite = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', {
+                    maxZoom: 20,
+                    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  });
+        var googleStreets = L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                    maxZoom: 20,
+                    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+  });
+
+	
+		///// Configuration de la map	
+		var map = L.map('map', {
+				layers: [OpenStreetMap], /// fond de base
+				center: [30.466586, -8.873402],/// coordonnées
+				zoom: 10	//// zoom par defaut
+			});
+		
+
+		/////layers de base		
+		var baseLayers = {
+			"Open Street Map": OpenStreetMap,
+			"google satellite": googlesatellite,
+			"googleStreets": googleStreets
+		};
+     
+		
+		///// layers à partir de Geoserver (format WMS)
+		var ecole =L.tileLayer.wms("http://localhost:8080/geoserver/accident_ecole/wms", {
+			layers: 'accident_ecole:ecole',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.0',
+			attribution: "myattribution"
+		});
+       
+        var layerLegend = L.Geoserver.legend("http://localhost:8080/geoserver/wms", {
+            layers: "accident_ecole:ecole",
+             // style: `stylefile`,
+          });
+
+        layerLegend.addTo(map);
+
+		var accident = L.tileLayer.wms("http://localhost:8080/geoserver/accident_ecole/wms", {
+			layers: 'accident_ecole:accidents',
+			format: 'image/png',
+			transparent: true,
+			version: '1.1.0',
+			attribution: "myattribution"
+		});
+
+		var wfsLayer = L.Geoserver.wfs("http://localhost:8080/geoserver/wfs", {
+            layers: "accident_ecole:accidents",
+            style: {
+              color: "black",
+              fillOpacity: "0.3",
+              fillColor: "red",
+            },
+            onEachFeature: function (feature, layer) {
+               console.log(feature);
+               layer.bindPopup(
+                   '<h4 class = "text-primary">Accident</h4>' +
+                            '<div class="container"><table class="table table-striped">' +
+                            '<thead><tr><th>Properties</th><th></th></tr></thead>' +
+                            '<tbody><tr><td> accident </td><td>'+ feature.properties.accident +'</td></tr>' +
+                            '<tr><td>permis </td><td>' + feature.properties.permis +'</td></tr>' +
+                            '<tr><td> temps_acc</td><td>' + feature.properties.temps_acc + '</td></tr>' 
+      );
+    },
+  });
+        wfsLayer.addTo(map);
+
+		var layerLegend = L.Geoserver.legend("http://localhost:8080/geoserver/wms", {
+            layers: "accident_ecole:accidents",
+             // style: `stylefile`,
+          });
+
+        layerLegend.addTo(map);
+						  
+		///// Groupe layers
+		var overlays = {
+			"accidents": accident,
+			"ecole": ecole,
+		};
+
+		//// Add the Find to the map 
+		var osmGeocoder = new L.Control.OSMGeocoder();
+        map.addControl(osmGeocoder);
+				
+		///// Add the Overview to the map 
+        var osm2 = L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png');
+		var miniMap = new L.Control.MiniMap(osm2, { toggleDisplay: true }).addTo(map);
+		
+		///// Add the scale control to the map
+		L.control.scale().addTo(map);
+			
+		///// Add the Navigation Bar to the map 
+		L.control.navbar({position: 'topleft'}).addTo(map);
+			
+
+		
+		///// Add the geolocate control to the map
+		L.control.locate().addTo(map);
+		
+		///// Add the mouse position to the map 
+		L.control.mousePosition().addTo(map);
+		L.control.ruler().addTo(map);
+		 L.control.browserPrint().addTo(map);
+		
+		///// Add the draw feature to the map
+		var drawnItems = new L.FeatureGroup();
+		map.addLayer(drawnItems);
+
+		///// config draw feature
+		var drawControl = new L.Control.Draw({
+			position: 'topleft',
+			draw: {
+				polygon: {
+					shapeOptions: {color: 'purple'},
+					allowIntersection: false,
+					drawError: {color: 'orange',timeout: 1000},
+					showArea: true,
+					metric: false,
+					repeatMode: true
+				},
+				polyline: {
+					shapeOptions: {color: 'red'},
+				},
+				rect: {
+					shapeOptions: {color: 'green'},
+				},
+				circle: {
+					shapeOptions: {color: 'steelblue'},
+				},
+				marker: true
+				},
+						edit: {
+						  featureGroup: drawnItems,
+						  remove: true
+					}
+				});
+		map.addControl(drawControl);
+		map.on('draw:created', function (e) {
+			var type = e.layerType,
+				layer = e.layer;
+			drawnItems.addLayer(layer);
+		});
+		
+		///// Ajout des couches de base + couches geoserver
+		L.control.layers(baseLayers,overlays).addTo(map);
+
+		/// Popup accidents
+			var owsrootUrl = 'http://localhost:8080/geoserver/accident_ecole/wfs';
+			var defaultParameters = {
+				service : 'WFS',
+				version : '1.0',
+				request : 'GetFeature',
+				typeName : 'accident_ecole:accidents',
+				outputFormat : 'json',
+				format_options : 'callback:getJson',
+				SrsName : 'EPSG:4326'
+			};
+			var parameters = L.Util.extend(defaultParameters);
+			var URL = owsrootUrl + L.Util.getParamString(parameters);
+			var ajax = $.ajax({
+				url : URL,
+				dataType : 'json',
+				jsonpCallback : 'getJson',
+				success : function (response) {
+				L.geoJson(response, {
+						onEachFeature: function (feature, url) {
+							popupOptions = {maxWidth: 250};
+							url.bindPopup("<b>accident:</b> " + feature.properties.accident +
+								"<br><b>accident: </b>" + feature.properties.accident +
+								"<br><b>Permis: </b>" + feature.properties.Permis +
+								"<br><b>temps_acc: </b>" + feature.properties.temps_acc +
+								"<br><b>Permis: </b>" + feature.properties.Permis +
+								"<br><b>Permis: </b>" + feature.properties.Permis +
+								"<br><b>Permis: </b>" + feature.properties.Permis
+								,popupOptions);
+						}
+					}).addTo(map);
+				}
+			});
+
+        
+
+    </script>
+	<script type="text/javascript">
+		//Analytics
+			var _gaq = _gaq || [];
+			_gaq.push(['_setAccount', 'UA-36489204-2']);
+			_gaq.push(['_trackPageview']);	  
+			(function() {
+			  var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+			  ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+			  var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+			})();
+		</script>
+	
+</body>
+</html>
